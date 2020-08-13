@@ -1,7 +1,7 @@
 pragma solidity 0.6.3;
 
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol';
-contract KDex {
+contract Kdex {
     struct Token {
         bytes32 ticker;
         address tokenAddress;
