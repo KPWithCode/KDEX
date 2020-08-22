@@ -1,7 +1,7 @@
 pragma solidity 0.6.3;
-
+pragma experimental ABIEncoderV2;
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol';
-import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol'
+import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol';
 
 contract Kdex {
 
@@ -52,6 +52,30 @@ contract Kdex {
 
     constructor() public {
         admin = msg.sender;
+    }
+
+    function getOrders(
+        bytes32 ticker,
+        Side side) 
+        external
+        view
+        returns(Order[] memory) {
+            return orderBook[ticker][uint(side)]
+        }
+
+    function getTokens() 
+    external 
+    view 
+    returns(Token[] memory) {
+    Token[] memory _tokens = new Token[](tokenList.length);
+    for (uint i = 0; i < tokenList.length; i++) {
+    _tokens[i] = Token(
+        tokens[tokenList[i]].id,
+        tokens[tokenList[i]].symbol,
+        tokens[tokenList[i]].at
+    );
+    }
+        return _tokens;
     }
 
     function addToken(
