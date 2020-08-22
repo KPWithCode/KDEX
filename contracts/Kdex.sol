@@ -130,7 +130,6 @@ contract Kdex {
             }
             i = 0;
             while(i < orders.length && orders[i].filled == orders[i].amount) {
-                [A,B,C,D,E,F]
                 for (uint j = i; j < orders.length -1; j++) {
                     orders[j] = orders[j + 1];
                 }
