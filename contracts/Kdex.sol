@@ -1,7 +1,11 @@
 pragma solidity 0.6.3;
 
 import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/IERC20.sol';
+import 'https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/math/SafeMath.sol'
+
 contract Kdex {
+
+    using SafeMath for uint;
 
      // two types of limit orders
     enum Side {
@@ -64,12 +68,12 @@ contract Kdex {
             msg.sender, 
             address(this), 
             amount);
-        transferBalances[msg.sender][ticker] += amount;
+        transferBalances[msg.sender][ticker] = transferBalances[msg.sender][ticker].add(amount);
     }
 
     function withdraw(uint amount, bytes32 ticker) tokenExist() external {
         require(transferBalances[msg.sender][ticker] >= amount, 'balance too low');
-        tranderBalances[msg.sender][ticker] -= amount;
+        tranderBalances[msg.sender][ticker]= tranderBalances[msg.sender][ticker].sub(amount);
         IERC20(tokens[ticker].tokenAddress).transfer(msg.sender, amount);
     }
 
@@ -92,14 +96,14 @@ contract Kdex {
             // matching process
             while(i < orders.length && remaining > 0) {
                 // available liquidity for each order of the order book
-                uint availible = orders[i].amount;
+                uint availible = orders[i].amount.sub(orders[i].filled);
                 // amount matched against market order
                 uint matched = (remaining > available) ? available : remaining;
                 // decrement remaining variable by what was matched
-                remaining -= matched
+                remaining = remaining.sub(matched);
                 // increment was was matched for the orders in the order book
                 // so that it is no longer available
-                orders[i].filled += matched;
+                orders[i].filled =  orders[i].filled.add(matched);
                 emit NewTrade(
                     nexTradeId, 
                     orders[i].id, 
@@ -111,22 +115,28 @@ contract Kdex {
                     now
                 );
                 if (side == Side.SELL) {
-                    traderBalances[msg.sender][ticker] -= matched;
-                    traderBalances[msg.sender][DAI] += matched * orders[i].price;
-                    traderBalances[orders[i].trader][ticker] = matched;
-                    traderBalances[orders[i].trader][DAI] += matched * orders[i].price;
+                    traderBalances[msg.sender][ticker] = traderBalances[msg.sender][ticker].sub(matched);
+                    traderBalances[msg.sender][DAI] = traderBalances[msg.sender][DAI]
+                        .add(matched.mul(orders[i].price));
+                    traderBalances[orders[i].trader][ticker] = traderBalances[orders[i].trader][ticker]
+                        .add(matched);
+                    traderBalances[orders[i].trader][DAI]= traderBalances[orders[i].trader][DAI]
+                        .sub(matched.mul(orders[i].price));
                 }
                  if (side == Side.BUY) {
-                    require(traderBalances[msg.sender][DAI] >= matched * orders[i].price,
+                    require(traderBalances[msg.sender][DAI] >= matched.mul(orders[i].price),
                     'dai balance too low'
                     )
-                    traderBalances[msg.sender][ticker] += matched;
-                    traderBalances[msg.sender][DAI] -= matched * orders[i].price;
-                    traderBalances[orders[i].trader][ticker] = matched;
-                    traderBalances[orders[i].trader][DAI] -= matched * orders[i].price;
+                    traderBalances[msg.sender][ticker] = traderBalances[msg.sender][ticker].add(matched);
+                    traderBalances[msg.sender][DAI] = traderBalances[msg.sender][DAI]
+                        .sub(matched.mul(orders[i].price));
+                    traderBalances[orders[i].trader][ticker] = traderBalances[orders[i].trader][ticker]
+                        .sub(matched);
+                    traderBalances[orders[i].trader][DAI]= traderBalances[orders[i].trader][DAI]
+                        .add(matched.mul(orders[i].price));
                 }
-                nextTradeId++;
-                i++;
+                nextTradeId = nextTradeId.add(1);
+                i = i.add(1);
             }
             i = 0;
             while(i < orders.length && orders[i].filled == orders[i].amount) {
@@ -134,7 +144,7 @@ contract Kdex {
                     orders[j] = orders[j + 1];
                 }
                 orders.pop();
-                i++;
+                i = i.add(1);
             }
         }
 
@@ -143,7 +153,7 @@ contract Kdex {
         if(side == Side.SELL) {
             require(transferBalances[msg.sender][ticker] >= amount, 'token balance too low');
         } else {
-            require(traderBalances[msg.sender][DAI] >= amount * price, 
+            require(traderBalances[msg.sender][DAI] >= amount.mul(price), 
             'dai balance too low'
             );
         }
@@ -158,7 +168,7 @@ contract Kdex {
         price,
         now,
         ))
-        uint i = orders.length -  1;
+        uint i = orders.length > 0 ? orders.length - 1 : 0;  1;
         while (i > 0) {
             if(side == SIDE.BUY && orders[i - 1].price > orders[i].price) {
                 break;
@@ -168,9 +178,9 @@ contract Kdex {
             }
             Order memory order = orders[i - 1];
             orders[i - 1] = orders[i];
-            i--;
+            i = i.sub(i);
         }
-        nextOrderId++;
+        nextOrderId = nextOrderId.add(1);
     }
 
     modifier tokenIsNotDai(bytes32 ticker) {
