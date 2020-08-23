@@ -53,7 +53,7 @@ contract Kdex {
     constructor() public {
         admin = msg.sender;
     }
-
+    // orders from orderbook
     function getOrders(
         bytes32 ticker,
         Side side) 
@@ -62,7 +62,7 @@ contract Kdex {
         returns(Order[] memory) {
             return orderBook[ticker][uint(side)]
         }
-
+    // list of tokens on exchange
     function getTokens() 
     external 
     view 
@@ -76,6 +76,11 @@ contract Kdex {
     );
     }
         return _tokens;
+    }
+
+    // Faucet mechanism for free tokens. Testing purposes
+    function faucet(address to, uint amount) external {
+        _mint(to,amount)
     }
 
     function addToken(
