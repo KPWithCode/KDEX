@@ -1,4 +1,5 @@
-const { expectRevert } = require('@openzeppelin/test-helpers')
+const { expectRevert } = require('@openzeppelin/test-helpers');
+const { web3 } = require('@openzeppelin/test-helpers/src/setup');
 const Dai = artifacts.require('mocks/Dai.sol');
 const Bat = artifacts.require('mocks/Bat.sol');
 const Rep = artifacts.require('mocks/Rep.sol');
@@ -68,6 +69,55 @@ contract('Kdex', (accounts) => {
             ),
             // token exist modifier 
             'this token does not exist'
+        );
+    });
+
+    it('should withdraw tokens', async() => {
+        const amount = web3.utils.toWei('100');
+        await dex.deposit(
+            amount,
+            DAI,
+            { from: trader1 }
+        );
+        await dex.withdraw(
+            amount,
+            DAI,
+            { from: trader1 }
+        );
+        const [balanceDex, balanceDai] = await Promise.all([
+            dex.traderBalances(trader1, DAI),
+            dai.balanceOf(trader1)
+        ]);
+        assert(balanceDex.isZero());
+        assert(balanceDai.toString() === web3.utils.toWei('1000'));
+    });
+
+    it('should NOT withdraw tokens if they dont exist', async () => {
+        await expectRevert(
+            dex.withdraw(
+                web3.utils.toWei('100'),
+                web3.utils.fromAscii('TOKENDOESNOTEXIST'),
+                { from: trader1 }
+            ),
+            // token exist modifier 
+            'this token does not exist'
+        );
+    });
+
+    it('should NOT withdraw tokens if balance is too low', async () => {
+        await dex.deposit(
+            web3.utils.toWei('100'),
+            DAI,
+            { from: trader1 }
+        );
+        await expectRevert(
+            dex.withdraw(
+                web3.utils.toWei('1000'),
+                DAI,
+                { from: trader1 }
+            ),
+            // token exist modifier 
+            'balance too low'
         );
     });
 });
