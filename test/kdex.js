@@ -51,6 +51,8 @@ contract('Kdex', (accounts) => {
             [dai, bat, rep, zrx].map(token => seedTokenBalance(token, trader2))
         );
     });
+
+
     // Allow user to deposit tokens
     it('should deposit tokens', async () => {
         const amount = web3.utils.toWei('100');
@@ -124,6 +126,11 @@ contract('Kdex', (accounts) => {
             'balance too low'
         );
     });
+
+
+
+
+
 
     // if limit order is created it shows up in orderbook with the correct value
     it('Should create limit order', async () => {
@@ -252,4 +259,54 @@ contract('Kdex', (accounts) => {
             'dai balance too low'
         );
     });
+
+
+
+
+    it('Should create market order & match against existing limit order', async () => {
+        await dex.deposit(
+            web3.utils.toWei('100'),
+            DAI,
+            {from: trader1}
+        );
+        dex.createLimitOrder(
+            REP,
+            web3.utils.toWei('10'),
+            10,
+            SIDE.BUY,
+            {from: trader1}
+        );
+        // fund balance of trader 2 in rep
+        await dex.deposit(
+        web3.utils.toWei('100'),
+        REP,
+        {from: trader2}
+        );
+
+        await dex.createMarketOrder(
+            REP,
+            web3.utils.toWei('5'),
+            SIDE.SELL,
+            {from: trader2}
+        );
+        // balances for tokens for each trader
+        const balances = await Promise.all([
+            dex.traderBalances(trader1, DAI),
+            dex.traderBalances(trader1, REP),
+            dex.traderBalances(trader2, DAI),
+            dex.traderBalances(trader2, REP)
+        ]);
+        // get orders for the buy side of REP
+        const orders = await dex.getOrders(REP, SIDE.BUY);
+        // balances left after order filled
+        assert(orders[0].filled === web3.utils.toWei('5'));
+        assert(balances[0].toString() === web3.utils.toWei('50'));
+        assert(balances[1].toString() === web3.utils.toWei('5'));
+        assert(balances[2].toString() === web3.utils.toWei('50'))
+        assert(balances[3].toString() === web3.utils.toWei('95'))
+
+        
+    });
+
+
 });
