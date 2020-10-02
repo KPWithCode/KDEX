@@ -1,5 +1,5 @@
 import Web3 from 'web3';
-import KDex from '..contracts/KDex.json'
+import KDex from './contracts/Kdex.json';
 import ERC20Abi from './ERC20Abi.json';
 
 
@@ -31,7 +31,7 @@ const getWeb3 = () => {
         // Fallback to localhost; use dev console port by default...
         else {
           const provider = new Web3.providers.HttpProvider(
-            "http://localhost:9545"
+            "http://127.0.0.1:9545"
           );
           const web3 = new Web3(provider);
           console.log("No web3 instance injected, using Local web3.");
